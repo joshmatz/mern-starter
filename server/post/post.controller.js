@@ -1,4 +1,4 @@
-import Post from '../models/post';
+import Post from './post.model';
 import cuid from 'cuid';
 import slug from 'slug';
 import sanitizeHtml from 'sanitize-html';
@@ -35,7 +35,7 @@ export function addPost(req, res) {
 }
 
 export function getPost(req, res) {
-  const newSlug = req.query.slug.split('-');
+  const newSlug = req.params.slug.split('-');
   const newCuid = newSlug[newSlug.length - 1];
   Post.findOne({ cuid: newCuid }).exec((err, post) => {
     if (err) {
@@ -46,7 +46,7 @@ export function getPost(req, res) {
 }
 
 export function deletePost(req, res) {
-  const postId = req.body.postId;
+  const postId = req.params.id;
   Post.findById(postId).exec((err, post) => {
     if (err) {
       return res.status(500).send(err);

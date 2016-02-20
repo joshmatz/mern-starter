@@ -5,7 +5,7 @@ import app from '../server';
 import chai from 'chai';
 import request from 'supertest';
 import mongoose from 'mongoose';
-import Post from '../models/post';
+import Post from './post.model';
 
 const expect = chai.expect;
 
@@ -30,7 +30,7 @@ function dropDB(done) {
   });
 }
 
-describe('GET /api/getPosts', function () {
+describe('GET /api/posts', function () {
 
   beforeEach('connect and add two post entries', function (done) {
 
@@ -49,20 +49,18 @@ describe('GET /api/getPosts', function () {
   });
 
   it('Should correctly give number of Posts', function (done) {
-
     request(app)
-      .get('/api/getPosts')
+      .get('/api/posts')
       .set('Accept', 'application/json')
       .end(function (err, res) {
-        Post.find().exec(function (err, posts) {
-          expect(posts.length).to.equal(res.body.posts.length);
-          done();
-        });
+        console.log('res.body.posts: ', res.body.posts);
+        expect(res.body.posts.length).to.equal(2);
+        done();
       });
   });
 });
 
-describe('GET /api/getPost', function () {
+describe('GET /api/post', function () {
 
   beforeEach('connect and add one Post entry', function(done){
 
@@ -82,7 +80,7 @@ describe('GET /api/getPost', function () {
   it('Should send correct data when queried against a title', function (done) {
 
     request(app)
-      .get('/api/getPost?slug=bar-f34gb2bh24b24b2')
+      .get('/api/post/f34gb2bh24b24b2')
       .set('Accept', 'application/json')
       .end(function (err, res) {
         Post.findOne({ cuid: 'f34gb2bh24b24b2' }).exec(function (err, post) {
@@ -94,7 +92,7 @@ describe('GET /api/getPost', function () {
 
 });
 
-describe('POST /api/addPost', function () {
+describe('POST /api/post', function () {
 
   beforeEach('connect and add a post', function (done) {
 
@@ -110,7 +108,7 @@ describe('POST /api/addPost', function () {
   it('Should send correctly add a post', function (done) {
 
     request(app)
-      .post('/api/addPost')
+      .post('/api/post')
       .send({ post: { name: 'Foo', title: 'bar', content: 'Hello Mern says Foo' } })
       .set('Accept', 'application/json')
       .end(function (err, res) {
@@ -123,7 +121,7 @@ describe('POST /api/addPost', function () {
 
 });
 
-describe('POST /api/deletePost', function () {
+describe('DELETE /api/post', function () {
   var postId;
 
   beforeEach('connect and add one Post entry', function(done){
@@ -150,9 +148,9 @@ describe('POST /api/deletePost', function () {
     });
 
     request(app)
-      .post('/api/deletePost')
-      .send({ postId: postId})
+      .delete(`/api/post/${postId}`)
       .set('Accept', 'application/json')
+      .expect(200)
       .end(function () {
 
         // Check if post is removed from DB

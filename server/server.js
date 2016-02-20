@@ -2,21 +2,22 @@ import Express from 'express';
 import mongoose from 'mongoose';
 import bodyParser from 'body-parser';
 import path from 'path';
+import boom from 'express-boom';
+import expressValidator from 'express-validator';
+
+// Auth
+import passport from 'passport';
+import { Strategy as LocalStrategy } from 'passport-local';
+import cookieParser from 'cookie-parser';
+import session from 'express-session';
+import Account from './account/account.model';
+
 
 // Webpack Requirements
 import webpack from 'webpack';
 import config from '../webpack.config.dev';
 import webpackDevMiddleware from 'webpack-dev-middleware';
 import webpackHotMiddleware from 'webpack-hot-middleware';
-
-// Initialize the Express App
-const app = new Express();
-
-if (process.env.NODE_ENV !== 'production') {
-  const compiler = webpack(config);
-  app.use(webpackDevMiddleware(compiler, { noInfo: true, publicPath: config.output.publicPath }));
-  app.use(webpackHotMiddleware(compiler));
-}
 
 // React And Redux Setup
 import { configureStore } from '../shared/redux/store/configureStore';
@@ -28,25 +29,58 @@ import { match, RouterContext } from 'react-router';
 // Import required modules
 import routes from '../shared/routes';
 import { fetchComponentData } from './util/fetchData';
-import posts from './routes/post.routes';
-import dummyData from './dummyData';
+import posts from './post/post.routes';
+import migrations from './migrations';
 import serverConfig from './config';
 
+// Initialize the Express App
+const app = new Express();
+
+if (process.env.NODE_ENV !== 'production' && process.env.NODE_ENV !== 'test') {
+  const compiler = webpack(config);
+  app.use(webpackDevMiddleware(compiler, { noInfo: true, publicPath: config.output.publicPath }));
+  app.use(webpackHotMiddleware(compiler));
+}
+
 // MongoDB Connection
-mongoose.connect(serverConfig.mongoURL, (error, connection) => {
+mongoose.connect(serverConfig.mongoURL, (error) => {
   if (error) {
-    console.error('Please make sure Mongodb is installed and running!')
+    console.error('Please make sure Mongodb is installed and running!'); // eslint-disable-line
     throw error;
   }
 
-  // feed some dummy data in DB.
-  dummyData();
+  // Set up database with any migrations necessary
+  migrations();
 });
 
 // Apply body Parser and server public assets and routes
 app.use(bodyParser.json({ limit: '20mb' }));
 app.use(bodyParser.urlencoded({ limit: '20mb', extended: false }));
+app.use(expressValidator());
 app.use(Express.static(path.resolve(__dirname, '../static')));
+app.use(boom());
+
+
+// Auth and Passport Setup
+app.use(cookieParser());
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'keyboard cat',
+  resave: false,
+  saveUninitialized: false,
+}));
+app.use(passport.initialize());
+app.use(passport.session());
+
+passport.use(new LocalStrategy(Account.authenticate()));
+passport.serializeUser(Account.serializeUser());
+passport.deserializeUser(Account.deserializeUser());
+
+// Other API routes
+app.use('/api', (req, res, next) => {
+  req.accepts('application/json');
+  res.contentType('application/json');
+  next();
+});
 app.use('/api', posts);
 
 // Render Initial HTML
@@ -75,37 +109,39 @@ const renderFullPage = (html, initialState) => {
   `;
 };
 
-// Server Side Rendering based on routes matched by React-router.
-app.use((req, res) => {
-  match({ routes, location: req.url }, (err, redirectLocation, renderProps) => {
-    if (err) {
-      return res.status(500).end('Internal server error');
-    }
+if (process.env.NODE_ENV === 'test') {
+  // Server Side Rendering based on routes matched by React-router.
+  app.use((req, res) => {
+    match({ routes, location: req.url }, (err, redirectLocation, renderProps) => {
+      if (err) {
+        return res.status(500).end('Internal server error');
+      }
 
-    if (!renderProps) {
-      return res.status(404).end('Not found!');
-    }
+      if (!renderProps) {
+        return res.status(404).end('Not found!');
+      }
 
-    const initialState = { posts: [], post: {} };
+      const initialState = { posts: [], post: {} };
 
-    const store = configureStore(initialState);
+      const store = configureStore(initialState);
 
-    fetchComponentData(store.dispatch, renderProps.components, renderProps.params)
-      .then(() => {
-        const initialView = renderToString(
-          <Provider store={store}>
-            <RouterContext {...renderProps} />
-          </Provider>
-        );
-        const finalState = store.getState();
+      fetchComponentData(store.dispatch, renderProps.components, renderProps.params)
+        .then(() => {
+          const initialView = renderToString(
+            <Provider store={store}>
+              <RouterContext {...renderProps} />
+            </Provider>
+          );
+          const finalState = store.getState();
 
-        res.status(200).end(renderFullPage(initialView, finalState));
-      })
-      .catch(() => {
-        res.end(renderFullPage('Error', {}));
-      });
+          res.status(200).end(renderFullPage(initialView, finalState));
+        })
+        .catch(() => {
+          res.end(renderFullPage('Error', {}));
+        });
+    });
   });
-});
+}
 
 // start app
 app.listen(serverConfig.port, (error) => {
