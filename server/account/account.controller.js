@@ -17,25 +17,59 @@ export function updateAccount(req, res) {
 }
 
 export function register(req, res) {
-  Account.register(
-    new Account({ username: req.body.username }),
-    req.body.password,
-    (err) => {
-      if (err) {
-        return res.boom.wrap(err);
-      }
+  const account = new Account(req.body);
 
-      passport.authenticate('local')(req, res, () => {
-        res.send(req.user);
-      });
+  account.save((err) => {
+    if (err) {
+      return res.boom.wrap(err);
     }
-  );
+
+    passport.authenticate('local', { failureRedirect: '/login' });
+
+    req.login(account, (loginErr) => {
+      if (loginErr) {
+        return res.boom.wrap(loginErr);
+      }
+      res.send(req.user);
+    });
+  });
+
+  // Account.register(
+  //   new Account(account),
+  //   req.body.password,
+  //   (err) => {
+  //     console.log('register::err: ', err);
+  //     if (err) {
+  //       return res.boom.wrap(err);
+  //     }
+
+  //     console.log('req.body: ', req.body);
+
+  //     // Account.authenticate()
+
+  //     // req.login(req.body, (loginErr) => {
+  //     //   if (loginErr) { return res.boom.wrap(loginErr); }
+  //     //   console.log('req.user: ', req.user);
+  //     //   res.send(req.user);
+  //     // });
+
+  //     // passport.authenticate('local')(req, res, (authenticateErr) => {
+  //     //   console.log('passport::err: ', authenticateErr);
+  //     //   console.log('req.user: ', req.user);
+  //     //   res.send(req.user);
+  //     //   // Account.findOneAndUpdate({ email: req.user.email }, { name: 'Jonah' }, { new: true }, (findErr, user) => {
+  //     //   //   console.log('user: ', user);
+
+  //     //   // });
+  //     // });
+  //   }
+  // );
 }
 
 export function login(req, res, next) {
   req.login(req.body, (err) => {
     if (err) { return next(err); }
-    return res.redirect(`/users/${req.user.username}`);
+    res.send(req.user);
   });
 }
 

@@ -9,6 +9,7 @@ import expressValidator from 'express-validator';
 import passport from 'passport';
 import { Strategy as LocalStrategy } from 'passport-local';
 import cookieParser from 'cookie-parser';
+import cookieSession from 'cookie-session';
 import session from 'express-session';
 import Account from './account/account.model';
 
@@ -29,7 +30,8 @@ import { match, RouterContext } from 'react-router';
 // Import required modules
 import routes from '../shared/routes';
 import { fetchComponentData } from './util/fetchData';
-import posts from './post/post.routes';
+import postRoutes from './post/post.routes';
+import accountRoutes from './account/account.routes';
 import migrations from './migrations';
 import serverConfig from './config';
 
@@ -42,16 +44,18 @@ if (process.env.NODE_ENV !== 'production' && process.env.NODE_ENV !== 'test') {
   app.use(webpackHotMiddleware(compiler));
 }
 
-// MongoDB Connection
-mongoose.connect(serverConfig.mongoURL, (error) => {
-  if (error) {
-    console.error('Please make sure Mongodb is installed and running!'); // eslint-disable-line
-    throw error;
-  }
+if (process.env.NODE_ENV !== 'test') {
+  // MongoDB Connection
+  mongoose.connect(serverConfig.mongoURL, (error) => {
+    if (error) {
+      console.error('Please make sure Mongodb is installed and running!'); // eslint-disable-line
+      throw error;
+    }
 
-  // Set up database with any migrations necessary
-  migrations();
-});
+    // Set up database with any migrations necessary
+    migrations();
+  });
+}
 
 // Apply body Parser and server public assets and routes
 app.use(bodyParser.json({ limit: '20mb' }));
@@ -63,17 +67,41 @@ app.use(boom());
 
 // Auth and Passport Setup
 app.use(cookieParser());
+app.use(cookieSession({
+  maxAge: 30 * 24 * 60 * 60 * 1000,
+  keys: [process.env.COOKIE_KEY || 'qoiweroqiweroiqmweroiqweroijqweroim1234oim10394jmi00m'],
+  signed: false,
+}));
 app.use(session({
   secret: process.env.SESSION_SECRET || 'keyboard cat',
   resave: false,
   saveUninitialized: false,
 }));
+
+passport.use(new LocalStrategy({ usernameField: 'email', passReqToCallback: true }, function (email, password, done) {
+  console.log('auth strategy');
+  Account.findOne({ email }, (err, user) => {
+    console.log('found: err: ', err);
+    console.log('found: user: ', user);
+    if (err) { return done(err); }
+    if (!user) { return done(null, false); }
+    if (!user.isValidPassword(password)) { return done(null, false); }
+    return done(null, user);
+  });
+}));
+passport.serializeUser((account, done) => {
+  console.log('serializing');
+  done(null, account._id);
+});
+passport.deserializeUser((id, done) => {
+  console.log('deserializing');
+  Account.findById(id, (err, account) => {
+    done(err, account);
+  });
+});
+
 app.use(passport.initialize());
 app.use(passport.session());
-
-passport.use(new LocalStrategy(Account.authenticate()));
-passport.serializeUser(Account.serializeUser());
-passport.deserializeUser(Account.deserializeUser());
 
 // Other API routes
 app.use('/api', (req, res, next) => {
@@ -81,7 +109,8 @@ app.use('/api', (req, res, next) => {
   res.contentType('application/json');
   next();
 });
-app.use('/api', posts);
+app.use('/api', postRoutes);
+app.use('/api', accountRoutes);
 
 // Render Initial HTML
 const renderFullPage = (html, initialState) => {

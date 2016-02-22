@@ -4,6 +4,7 @@ import slug from 'slug';
 import sanitizeHtml from 'sanitize-html';
 
 export function getPosts(req, res) {
+  console.log('req.user: ', req.user);
   Post.find().sort('-dateAdded').exec((err, posts) => {
     if (err) {
       return res.status(500).send(err);
@@ -13,16 +14,16 @@ export function getPosts(req, res) {
 }
 
 export function addPost(req, res) {
-  if (!req.body.post.name || !req.body.post.title || !req.body.post.content) {
+  if (!req.body.name || !req.body.title || !req.body.content) {
     return res.status(403).end();
   }
 
-  const newPost = new Post(req.body.post);
+  const newPost = new Post(req.body);
 
   // Let's sanitize inputs
-  newPost.title = sanitizeHtml(newPost.title);
-  newPost.name = sanitizeHtml(newPost.name);
-  newPost.content = sanitizeHtml(newPost.content);
+  // newPost.title = sanitizeHtml(newPost.title);
+  // newPost.name = sanitizeHtml(newPost.name);
+  // newPost.content = sanitizeHtml(newPost.content);
 
   newPost.slug = slug(newPost.title.toLowerCase(), { lowercase: true });
   newPost.cuid = cuid();
@@ -30,7 +31,7 @@ export function addPost(req, res) {
     if (err) {
       return res.status(500).send(err);
     }
-    return res.json({ post: saved });
+    return res.json(saved);
   });
 }
 
