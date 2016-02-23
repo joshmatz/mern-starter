@@ -78,23 +78,29 @@ app.use(session({
   saveUninitialized: false,
 }));
 
-passport.use(new LocalStrategy({ usernameField: 'email', passReqToCallback: true }, function (email, password, done) {
-  console.log('auth strategy');
-  Account.findOne({ email }, (err, user) => {
-    console.log('found: err: ', err);
-    console.log('found: user: ', user);
-    if (err) { return done(err); }
-    if (!user) { return done(null, false); }
-    if (!user.isValidPassword(password)) { return done(null, false); }
-    return done(null, user);
+passport.use(new LocalStrategy({ usernameField: 'email', passReqToCallback: true }, (req, email, password, done) => {
+  Account.findOne({ email }, '+password', (err, user) => {
+    if (err) {
+      return done(err);
+    }
+    if (!user) {
+      return done(null, false);
+    }
+
+    return user.isValidPassword(password).then((isValid) => {
+      if (isValid) {
+        done(null, user);
+      } else {
+        done(null, false);
+      }
+    });
   });
 }));
+
 passport.serializeUser((account, done) => {
-  console.log('serializing');
   done(null, account._id);
 });
 passport.deserializeUser((id, done) => {
-  console.log('deserializing');
   Account.findById(id, (err, account) => {
     done(err, account);
   });

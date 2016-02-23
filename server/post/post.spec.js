@@ -16,7 +16,7 @@ function connectDB(done) {
 
   mongoose.connect((process.env.MONGO_URL || 'mongodb://localhost:27017/mern-test'), function (err) {
     if (err) {
-      console.log("err: ", err);
+      console.log("connectDB::err: ", err);
       return done(err);
     }
     done();

@@ -1,12 +1,14 @@
+/*eslint expr: false*/
 
 // import mocha from 'mocha';
 import app from '../server';
-// import chai from 'chai';
+import chai from 'chai';
 import request from 'supertest';
 import mongoose from 'mongoose';
 // import Account from './account.model';
 // import Post from '../post/post.model';
 
+const expect = chai.expect;
 let cookies;
 
 function connectDB(done) {
@@ -16,7 +18,7 @@ function connectDB(done) {
 
   mongoose.connect((process.env.MONGO_URL || 'mongodb://localhost:27017/mern-test'), (err) => {
     if (err) {
-      console.log('err: ', err);
+      console.log('mongoose:err: ', err);
       return done(err);
     }
     done();
@@ -45,41 +47,36 @@ describe('Account Registration Tests', () => {
       .end((err, res) => {
         const cookieHeaders = res.headers['set-cookie'];
         cookies = cookieHeaders.pop().split(';')[0];
-        // console.log("res.headers['set-cookie']: ", res.headers['set-cookie'].pop().split(';')[0]);
-        // console.log('cookies: ', cookies);
-        // console.log('res.body: ', res.body);
-        // expect(res.body.posts.length).to.equal(2);
+        expect(res.body.email).to.be.ok;
+        expect(res.body.password).to.not.be.ok;
         done();
       });
     });
 
     it('should have the user be logged in', (done) => {
-      // req.set('Cookie', "cookieName1=cookieValue1");
       const req = request(app).get('/api/account');
 
       req.cookies = cookies;
-      // console.log('cookies: ', cookies);
 
       req
       .set('Cookie', cookies)
-      .set('Accept', 'application/json')
-      .end((res, err) => {
-        console.log('res.body: ', res.body);
+      .end((err, res) => {
+        expect(res.body.email).to.be.ok;
+        expect(res.body.password).to.not.be.ok;
         done();
       });
     });
 
     it('should allow the user to be logged out', (done) => {
-      // req.set('Cookie', "cookieName1=cookieValue1");
-      const req = request(app).get('/api/account/logout');
+      const req = request(app).post('/api/account/logout');
 
       req.cookies = cookies;
 
       req
       .set('Cookie', cookies)
-      .set('Accept', 'application/json')
       .end((err, res) => {
-        console.log('res.body: ', res.body);
+        console.log('/api/account/logout::err: ', err);
+        expect(res.body).to.not.be.ok;
         done();
       });
     });
@@ -89,56 +86,12 @@ describe('Account Registration Tests', () => {
       .post('/api/account/login')
       .send({ email: 'foo@foo.foo', password: 'bar' })
       .end((err, res) => {
-        console.log('res.body: ', res.body);
         const cookieHeaders = res.headers['set-cookie'];
         cookies = cookieHeaders.pop().split(';')[0];
-        // console.log("res.headers['set-cookie']: ", res.headers['set-cookie'].pop().split(';')[0]);
-        // console.log('cookies: ', cookies);
-        // console.log('res.body: ', res.body);
-        // expect(res.body.posts.length).to.equal(2);
+        expect(res.body.email).to.be.ok;
+        expect(res.body.password).to.not.be.ok;
         done();
       });
     });
   });
 });
-
-// describe('Account', function() {
-
-//     before(function(done) {
-//         db = mongoose.connect('mongodb://localhost/test');
-//             done();
-//     });
-
-//     after(function(done) {
-//         mongoose.connection.close();
-//         done();
-//     });
-
-//     beforeEach(function(done) {
-//         var account = new Account({
-//             username: '12345',
-//             password: 'testy'
-//         });
-
-//         account.save(function(error) {
-//             if (error) console.log('error' + error.message);
-//             else console.log('no error');
-//             done();
-//         });
-//     });
-
-//     it('find a user by username', function(done) {
-//         Account.findOne({ username: '12345' }, function(err, account) {
-//             account.username.should.eql('12345');
-//             console.log("   username: ", account.username);
-//             done();
-//         });
-//     });
-
-//     afterEach(function(done) {
-//         Account.remove({}, function() {
-//             done();
-//         });
-//      });
-
-// });

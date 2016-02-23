@@ -17,13 +17,17 @@ const accountSchema = new Schema({
 });
 
 function isValidPassword(password) {
-  bcrypt.compare(password, this.password, (bcryptError, res) => {
-    if (bcryptError) {
-      return false;
-    }
+  const promise = new Promise((resolve) => {
+    bcrypt.compare(password, this.password, (bcryptError, res) => {
+      if (bcryptError) {
+        return resolve(false);
+      }
 
-    return res;
+      return resolve(res);
+    });
   });
+
+  return promise;
 }
 
 function hashPassword(next) {
