@@ -9,7 +9,6 @@ import expressValidator from 'express-validator';
 import passport from 'passport';
 import { Strategy as LocalStrategy } from 'passport-local';
 import cookieParser from 'cookie-parser';
-import cookieSession from 'cookie-session';
 import session from 'express-session';
 import Account from './account/account.model';
 
@@ -67,11 +66,6 @@ app.use(boom());
 
 // Auth and Passport Setup
 app.use(cookieParser());
-app.use(cookieSession({
-  maxAge: 30 * 24 * 60 * 60 * 1000,
-  keys: [process.env.COOKIE_KEY || 'qoiweroqiweroiqmweroiqweroijqweroim1234oim10394jmi00m'],
-  signed: false,
-}));
 app.use(session({
   secret: process.env.SESSION_SECRET || 'keyboard cat',
   resave: false,
@@ -98,10 +92,10 @@ passport.use(new LocalStrategy({ usernameField: 'email', passReqToCallback: true
 }));
 
 passport.serializeUser((account, done) => {
-  done(null, account._id);
+  done(null, account._id );
 });
-passport.deserializeUser((id, done) => {
-  Account.findById(id, (err, account) => {
+passport.deserializeUser((session, done) => {
+  Account.findById(session, (err, account) => {
     done(err, account);
   });
 });

@@ -39,7 +39,7 @@ describe('Account Registration Tests', () => {
   before(connectDB);
   after(dropDB);
 
-  describe('When a user tries to register with valid credentials', () => {
+  describe('On registration with valid credentials...', () => {
     it('should return the user', (done) => {
       request(app)
       .post('/api/account/register')
@@ -67,7 +67,10 @@ describe('Account Registration Tests', () => {
       });
     });
 
-    it('should allow the user to be logged out', (done) => {
+  });
+
+  describe('After registering...', () => {
+    it('should allow the user to logout', (done) => {
       const req = request(app).post('/api/account/logout');
 
       req.cookies = cookies;
@@ -75,8 +78,32 @@ describe('Account Registration Tests', () => {
       req
       .set('Cookie', cookies)
       .end((err, res) => {
-        console.log('/api/account/logout::err: ', err);
         expect(res.body).to.not.be.ok;
+        done();
+      });
+    });
+
+    it('should not have a session after logging out', (done) => {
+      const req = request(app).post('/api/account');
+
+      req.cookies = cookies;
+
+      req
+      .set('Cookie', cookies)
+      .end((err, res) => {
+        expect(res.status).to.be.equal(401);
+        done();
+      });
+    });
+
+    it('should not be able to login with invalid credentials', (done) => {
+      request(app)
+      .post('/api/account/login')
+      .send({ email: 'foo@foo.foo', password: 'foo' })
+      .end((err, res) => {
+        expect(res.status).to.be.equal(401);
+        expect(res.body.statusCode).to.be.equal(401);
+        expect(res.body.email).to.not.be.ok;
         done();
       });
     });

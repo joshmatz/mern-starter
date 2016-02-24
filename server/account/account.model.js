@@ -54,8 +54,6 @@ accountSchema.pre('save', hashPassword);
 accountSchema.methods.isValidPassword = isValidPassword;
 
 accountSchema.statics.authenticate = function authenticate(req, email, password, done) {
-  console.log('email: ', email);
-  console.log('password: ', password);
   this.findOne({ email }, (err, user) => {
     if (err) { return done(err); }
     if (!user) {

@@ -4,11 +4,11 @@ import passport from 'passport';
 
 const router = Express.Router(); // eslint-disable-line
 
-router.route('/account').get(AccountController.getAccount);
-router.route('/account').post(AccountController.updateAccount);
+router.get('/account', AccountController.isAuthenticated, AccountController.getAccount);
+router.post('/account', AccountController.isAuthenticated, AccountController.updateAccount);
+router.post('/account/logout', AccountController.isAuthenticated, AccountController.logout);
 
-router.route('/account/register').post(AccountController.register);
-router.post('/account/login', AccountController.login);
-router.post('/account/logout', AccountController.logout);
+router.post('/account/register', AccountController.isNotAuthenticated, AccountController.register);
+router.post('/account/login', AccountController.isNotAuthenticated, AccountController.login);
 
 export default router;

@@ -1,6 +1,22 @@
 import Account from './account.model';
 import passport from 'passport';
 
+export function isAuthenticated(req, res, next) {
+  if (req.isAuthenticated()) {
+    return next();
+  }
+
+  return res.boom.unauthorized();
+}
+
+export function isNotAuthenticated(req, res, next) {
+  if (!req.isAuthenticated()) {
+    return next();
+  }
+
+  return res.boom.unauthorized();
+}
+
 export function getAccount(req, res) {
   res.send(req.user);
 }
@@ -31,8 +47,6 @@ export function register(req, res) {
         return res.boom.wrap(loginErr);
       }
 
-      console.log('account.controller::register::req.user: ', req.user);
-
       Account.findById(req.user._id, (findErr, user) => {
         if (findErr) {
           return res.boom.wrap(findErr);
@@ -45,7 +59,7 @@ export function register(req, res) {
 }
 
 export function login(req, res, next) {
-  passport.authenticate('local', (err, user, info) => {
+  passport.authenticate('local', (err, user) => {
     if (err) { return next(err); }
     if (!user) { return res.boom.unauthorized(); }
 
