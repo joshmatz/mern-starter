@@ -1,6 +1,7 @@
 import bcrypt from 'bcrypt';
 import mongoose from 'mongoose';
 import { isEmail } from 'validator';
+import mongoosePaginate from 'mongoose-paginate';
 
 const Schema = mongoose.Schema;
 
@@ -14,6 +15,7 @@ const accountSchema = new Schema({
   },
   password: { type: 'String', select: false },
   name: { type: 'String' },
+  role: { type: 'String', enum: ['admin', 'manager', 'user'], required: true },
 });
 
 function isValidPassword(password) {
@@ -66,5 +68,6 @@ accountSchema.statics.authenticate = function authenticate(req, email, password,
   });
 };
 
+accountSchema.plugin(mongoosePaginate);
 
 export default mongoose.model('Account', accountSchema);

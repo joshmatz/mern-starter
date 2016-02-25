@@ -17,6 +17,14 @@ export function isNotAuthenticated(req, res, next) {
   return res.boom.unauthorized();
 }
 
+export function isAdmin(req, res, next) {
+  if (req.user.role === 'admin') {
+    return next();
+  }
+
+  return res.boom.unauthorized();
+}
+
 export function getAccount(req, res) {
   res.send(req.user);
 }
@@ -34,6 +42,8 @@ export function updateAccount(req, res) {
 
 export function register(req, res) {
   const account = new Account(req.body);
+
+  account.role = 'user';
 
   account.save((err) => {
     if (err) {

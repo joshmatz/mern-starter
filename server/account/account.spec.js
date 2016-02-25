@@ -54,11 +54,8 @@ describe('Account Registration Tests', () => {
     });
 
     it('should have the user be logged in', (done) => {
-      const req = request(app).get('/api/account');
-
-      req.cookies = cookies;
-
-      req
+      request(app)
+      .get('/api/account')
       .set('Cookie', cookies)
       .end((err, res) => {
         expect(res.body.email).to.be.ok;

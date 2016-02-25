@@ -29,10 +29,13 @@ import { match, RouterContext } from 'react-router';
 // Import required modules
 import routes from '../shared/routes';
 import { fetchComponentData } from './util/fetchData';
-import postRoutes from './post/post.routes';
-import accountRoutes from './account/account.routes';
 import migrations from './migrations';
 import serverConfig from './config';
+
+// routes
+import postRoutes from './post/post.routes';
+import accountRoutes from './account/account.routes';
+import accountsRoutes from './accounts/accounts.routes';
 
 // Initialize the Express App
 const app = new Express();
@@ -111,6 +114,7 @@ app.use('/api', (req, res, next) => {
 });
 app.use('/api', postRoutes);
 app.use('/api', accountRoutes);
+app.use('/api', accountsRoutes);
 
 // Render Initial HTML
 const renderFullPage = (html, initialState) => {

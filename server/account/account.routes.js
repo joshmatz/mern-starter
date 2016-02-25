@@ -1,6 +1,5 @@
 import Express from 'express';
 import * as AccountController from './account.controller';
-import passport from 'passport';
 
 const router = Express.Router(); // eslint-disable-line
 
