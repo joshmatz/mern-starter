@@ -50,7 +50,7 @@ export function register(req, res) {
       return res.boom.wrap(err);
     }
 
-    passport.authenticate('local', { failureRedirect: '/login' });
+    // passport.authenticate('local', { failureRedirect: '/login' });
 
     req.login(account, (loginErr) => {
       if (loginErr) {

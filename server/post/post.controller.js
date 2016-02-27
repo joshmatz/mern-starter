@@ -4,7 +4,6 @@ import slug from 'slug';
 import sanitizeHtml from 'sanitize-html';
 
 export function getPosts(req, res) {
-  console.log('req.user: ', req.user);
   Post.find().sort('-dateAdded').exec((err, posts) => {
     if (err) {
       return res.status(500).send(err);

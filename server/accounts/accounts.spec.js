@@ -7,7 +7,6 @@ import mongoose from 'mongoose';
 import Account from '../account/account.model';
 
 const expect = chai.expect;
-let cookies;
 
 function connectDB(done) {
   mongoose.connect((process.env.MONGO_URL || 'mongodb://localhost:27017/mern-test'), (err) => {
@@ -77,15 +76,16 @@ describe('==== User CRUD Tests ====', () => {
     });
 
     describe('When the account is logged in as a non-admin', () => {
-      let cookies = null;
+      let Cookie = [];
 
       before((done) => {
         request(app)
         .post('/api/account/register')
         .send({ email: 'foo@foo.foo', password: 'bar', name: 'Jonah' })
         .end((err, res) => {
-          const cookieHeaders = res.headers['set-cookie'];
-          cookies = cookieHeaders.pop().split(';')[0];
+          res.headers['set-cookie'].forEach((cookie) => {
+            Cookie.push(cookie.split(';')[0]);
+          });
           expect(res.body.email).to.be.ok;
           expect(res.body.password).to.not.be.ok;
           done();
@@ -95,7 +95,7 @@ describe('==== User CRUD Tests ====', () => {
       it('cannot read accounts', (done) => {
         request(app)
         .get('/api/accounts')
-        .set('Cookies', cookies)
+        .set('Cookie', Cookie)
         .end((err, res) => {
           expect(res.status).to.be.equal(401);
           expect(res.body.statusCode).to.be.equal(401);
@@ -106,7 +106,7 @@ describe('==== User CRUD Tests ====', () => {
       it('cannot read an account', (done) => {
         request(app)
         .get('/api/accounts/1')
-        .set('Cookies', cookies)
+        .set('Cookie', Cookie)
         .end((err, res) => {
           expect(res.status).to.be.equal(401);
           expect(res.body.statusCode).to.be.equal(401);
@@ -117,7 +117,7 @@ describe('==== User CRUD Tests ====', () => {
       it('cannot update an account', (done) => {
         request(app)
         .post('/api/accounts/1')
-        .set('Cookies', cookies)
+        .set('Cookie', Cookie)
         .end((err, res) => {
           expect(res.status).to.be.equal(401);
           expect(res.body.statusCode).to.be.equal(401);
@@ -128,7 +128,7 @@ describe('==== User CRUD Tests ====', () => {
       it('cannot delete an account', (done) => {
         request(app)
         .delete('/api/accounts/1')
-        .set('Cookies', cookies)
+        .set('Cookie', Cookie)
         .end((err, res) => {
           expect(res.status).to.be.equal(401);
           expect(res.body.statusCode).to.be.equal(401);
@@ -138,7 +138,8 @@ describe('==== User CRUD Tests ====', () => {
     });
 
     describe('When an admin is logged in', () => {
-      let cookies = [];
+      let Cookie = [];
+      let existingAccount = 0;
 
       before((done) => {
         Account.create({
@@ -152,10 +153,10 @@ describe('==== User CRUD Tests ====', () => {
             .post('/api/account/login')
             .send({ email: 'admin@admin.admin', password: 'password' })
             .end((err, res) => {
-              const cookieHeaders = res.headers['set-cookie'];
-              cookieHeaders.forEach((cookie) => {
-                cookies.push(cookie.split(';')[0]);
+              res.headers['set-cookie'].forEach((cookie) => {
+                Cookie.push(cookie.split(';')[0]);
               });
+              
               expect(res.body.email).to.be.ok;
               expect(res.body.password).to.not.be.ok;
               done();
@@ -167,34 +168,42 @@ describe('==== User CRUD Tests ====', () => {
       });
 
       it('can read accounts', (done) => {
-        request(app).get('/api/accounts')
-        .set('Cookie', cookies)
-        .end((err, res) => {
-          console.log('can read accounts req.body: ', res.body);
-          expect(res.status).to.be.equal(401);
-          expect(res.body.statusCode).to.be.equal(401);
-          done();
-        });
-      });
-
-      xit('can read an account', (done) => {
         request(app)
-        .get('/api/accounts/1')
-        .set('Cookies', cookies)
+        .get('/api/accounts')
+        .set('Cookie', Cookie)
         .end((err, res) => {
-          expect(res.status).to.be.equal(401);
-          expect(res.body.statusCode).to.be.equal(401);
+          existingAccount = res.body.docs[0];
+          expect(existingAccount.password).to.not.be.ok;
+          expect(res.body.docs).to.be.ok;
+          expect(res.body.total).to.be.ok;
+          expect(res.body.limit).to.be.ok;
+          expect(res.body.page).to.be.ok;
+          expect(res.body.pages).to.be.ok;
+          expect(res.status).to.be.equal(200);
           done();
         });
       });
 
-      xit('can update an account', (done) => {
+      it('can read an account', (done) => {
+        request(app)
+        .get(`/api/accounts/${existingAccount.id}`)
+        .set('Cookie', Cookie)
+        .end((err, res) => {
+          expect(res.body.email).to.be.ok;
+          expect(res.body.password).to.not.be.ok;
+          expect(res.status).to.be.equal(200);
+          done();
+        });
+      });
+
+      it('can update an account', (done) => {
         request(app)
         .post('/api/accounts/1')
-        .set('Cookies', cookies)
+        .send({name: 'George'})
+        .set('Cookie', Cookie)
         .end((err, res) => {
-          expect(res.status).to.be.equal(401);
-          expect(res.body.statusCode).to.be.equal(401);
+          expect(res.body.name).to.be.equal('George');
+          expect(res.status).to.be.equal(200);
           done();
         });
       });
@@ -202,7 +211,7 @@ describe('==== User CRUD Tests ====', () => {
       xit('can delete an account', (done) => {
         request(app)
         .delete('/api/accounts/1')
-        .set('Cookies', cookies)
+        .set('Cookie', Cookie)
         .end((err, res) => {
           expect(res.status).to.be.equal(401);
           expect(res.body.statusCode).to.be.equal(401);

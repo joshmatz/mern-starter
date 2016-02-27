@@ -9,11 +9,6 @@ export function getAccounts(req, res) {
 
   Account.paginate({}, { limit, page, sort, lean, leanWithId }, (err, result) => {
     res.send(result);
-    // result.docs
-    // result.total
-    // result.limit - 10
-    // result.page - 3
-    // result.pages
   });
 }
 

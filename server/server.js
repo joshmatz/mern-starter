@@ -77,28 +77,26 @@ app.use(session({
 
 passport.use(new LocalStrategy({ usernameField: 'email', passReqToCallback: true }, (req, email, password, done) => {
   Account.findOne({ email }, '+password', (err, user) => {
-    if (err) {
-      return done(err);
-    }
+    if (err) { return done(err); }
     if (!user) {
-      return done(null, false);
+      return done(null, false, { message: 'Incorrect username.' });
     }
 
-    return user.isValidPassword(password).then((isValid) => {
-      if (isValid) {
-        done(null, user);
-      } else {
-        done(null, false);
+    user.isValidPassword(password, (compareErr, isMatch) => {
+      if (isMatch) {
+        return done(null, user);
       }
+
+      return done(null, false, { message: 'Incorrect password.' });
     });
   });
 }));
 
 passport.serializeUser((account, done) => {
-  done(null, account._id );
+  done(null, account._id);
 });
-passport.deserializeUser((session, done) => {
-  Account.findById(session, (err, account) => {
+passport.deserializeUser((currentSession, done) => {
+  Account.findById(currentSession, (err, account) => {
     done(err, account);
   });
 });

@@ -9,7 +9,7 @@ import mongoose from 'mongoose';
 // import Post from '../post/post.model';
 
 const expect = chai.expect;
-let cookies;
+let Cookie = [];
 
 function connectDB(done) {
   // if (mongoose.connection.name !== 'mern-test') {
@@ -45,8 +45,9 @@ describe('Account Registration Tests', () => {
       .post('/api/account/register')
       .send({ email: 'foo@foo.foo', password: 'bar', name: 'Jonah' })
       .end((err, res) => {
-        const cookieHeaders = res.headers['set-cookie'];
-        cookies = cookieHeaders.pop().split(';')[0];
+        res.headers['set-cookie'].forEach((cookie) => {
+          Cookie.push(cookie.split(';')[0]);
+        });
         expect(res.body.email).to.be.ok;
         expect(res.body.password).to.not.be.ok;
         done();
@@ -56,7 +57,7 @@ describe('Account Registration Tests', () => {
     it('should have the user be logged in', (done) => {
       request(app)
       .get('/api/account')
-      .set('Cookie', cookies)
+      .set('Cookie', Cookie)
       .end((err, res) => {
         expect(res.body.email).to.be.ok;
         expect(res.body.password).to.not.be.ok;
@@ -68,12 +69,9 @@ describe('Account Registration Tests', () => {
 
   describe('After registering...', () => {
     it('should allow the user to logout', (done) => {
-      const req = request(app).post('/api/account/logout');
-
-      req.cookies = cookies;
-
-      req
-      .set('Cookie', cookies)
+      request(app)
+      .post('/api/account/logout')
+      .set('Cookie', Cookie)
       .end((err, res) => {
         expect(res.body).to.not.be.ok;
         done();
@@ -81,12 +79,9 @@ describe('Account Registration Tests', () => {
     });
 
     it('should not have a session after logging out', (done) => {
-      const req = request(app).post('/api/account');
-
-      req.cookies = cookies;
-
-      req
-      .set('Cookie', cookies)
+      request(app)
+      .post('/api/account')
+      .set('Cookie', Cookie)
       .end((err, res) => {
         expect(res.status).to.be.equal(401);
         done();
@@ -110,8 +105,6 @@ describe('Account Registration Tests', () => {
       .post('/api/account/login')
       .send({ email: 'foo@foo.foo', password: 'bar' })
       .end((err, res) => {
-        const cookieHeaders = res.headers['set-cookie'];
-        cookies = cookieHeaders.pop().split(';')[0];
         expect(res.body.email).to.be.ok;
         expect(res.body.password).to.not.be.ok;
         done();
