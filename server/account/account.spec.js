@@ -83,6 +83,7 @@ describe('Account Registration Tests', () => {
       .post('/api/account')
       .set('Cookie', Cookie)
       .end((err, res) => {
+        Cookie = [];
         expect(res.status).to.be.equal(401);
         done();
       });
@@ -109,6 +110,31 @@ describe('Account Registration Tests', () => {
         expect(res.body.password).to.not.be.ok;
         done();
       });
+    });
+
+    it('should allow the user to request password reset token', (done) => {
+      request(app)
+      .post('/api/account/reset')
+      .send({ email: 'foo@foo.foo'})
+      .end((err, res) => {
+        expect(res.statusCode).to.be.equal(200);
+        expect(res.body).to.not.be.ok;
+        done();
+      });
+    });
+
+    it('should not allow the user to reset their password with a valid reset token', (done) => {
+      request(app)
+      .post('/api/account/reset/mioj2340j123490kdsf09k1234k09sdf')
+      .send({ password: 'no'})
+      .end((err, res) => {
+        expect(res.statusCode).to.be.equal(404);
+        done();
+      });
+    });
+
+    xit('should allow the user to reset their password with a valid reset token', (done) => {
+
     });
   });
 });

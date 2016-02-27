@@ -1,5 +1,7 @@
 import Account from './account.model';
 import passport from 'passport';
+import bcrypt from 'bcrypt';
+import uuid from 'node-uuid';
 
 export function isAuthenticated(req, res, next) {
   if (req.isAuthenticated()) {
@@ -50,8 +52,6 @@ export function register(req, res) {
       return res.boom.wrap(err);
     }
 
-    // passport.authenticate('local', { failureRedirect: '/login' });
-
     req.login(account, (loginErr) => {
       if (loginErr) {
         return res.boom.wrap(loginErr);
@@ -91,3 +91,68 @@ export function logout(req, res) {
   req.logout();
   res.status(200).send('');
 }
+
+export function generateToken(req, res) {
+  if (!req.body.email) {
+    return res.boom.badRequest('Email required');
+  }
+  const now = new Date();
+  const minutesToExpire = 120;
+  const expiresAt = now.setMinutes(now.getMinutes() + minutesToExpire);
+  const token = uuid.v4();
+
+  bcrypt.genSalt(10, (err, salt) => {
+    if (err) {
+      return res.boom.wrap(err);
+    }
+
+    bcrypt.hash(token, salt, (hashErr, hash) => {
+      if (hashErr) {
+        return res.boom.wrap(hashErr);
+      }
+
+      const resetObject = {
+        $set: {
+          resetPasswordToken: hash,
+          resetPasswordExpires: expiresAt,
+        },
+      };
+
+      Account.findOneAndUpdate({ email: req.body.email }, resetObject, (updateErr) => {
+        if (updateErr) {
+          return res.boom.wrap(updateErr);
+        }
+
+        // send email
+
+        return res.send('');
+      });
+    });
+  });
+}
+
+export function reset(req, res) {
+  const find = {
+    resetPasswordToken: req.params.token,
+    resetPasswordExpires: { $gt: new Date() },
+  };
+
+  const newPassword = {
+    password: req.body.password,
+  };
+
+  Account.findOneAndUpdate(find, newPassword, (updateErr, isFound) => {
+    if (updateErr) {
+      return res.boom.wrap(updateErr);
+    }
+
+    if (!isFound) {
+      return res.boom.notFound();
+    }
+
+    // send email
+
+    return res.send('');
+  });
+}
+
