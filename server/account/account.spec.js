@@ -5,7 +5,7 @@ import app from '../server';
 import chai from 'chai';
 import request from 'supertest';
 import mongoose from 'mongoose';
-// import Account from './account.model';
+import Account from './account.model';
 // import Post from '../post/post.model';
 
 const expect = chai.expect;
@@ -114,7 +114,7 @@ describe('Account Registration Tests', () => {
 
     it('should allow the user to request password reset token', (done) => {
       request(app)
-      .post('/api/account/reset')
+      .post('/api/account/token')
       .send({ email: 'foo@foo.foo'})
       .end((err, res) => {
         expect(res.statusCode).to.be.equal(200);
@@ -125,16 +125,29 @@ describe('Account Registration Tests', () => {
 
     it('should not allow the user to reset their password with a valid reset token', (done) => {
       request(app)
-      .post('/api/account/reset/mioj2340j123490kdsf09k1234k09sdf')
-      .send({ password: 'no'})
+      .post('/api/account/reset')
+      .send({ password: 'no', token: 'mioj2340j123490kdsf09k1234k09sdf'})
       .end((err, res) => {
         expect(res.statusCode).to.be.equal(404);
         done();
       });
     });
 
-    xit('should allow the user to reset their password with a valid reset token', (done) => {
+    it('should allow the user to reset their password with a valid reset token', (done) => {
+      Account.findOne({resetPasswordExpires: {$gt: new Date()}}, '+password', (err, found) => {
+        request(app)
+        .post('/api/account/reset/')
+        .send({ password: 'no', token: found.resetPasswordToken})
+        .end((requestErr, res) => {
+          expect(res.statusCode).to.be.equal(200);
 
+          Account.findOne({email: found.email}, '+password', (nextErr, again) => {
+            expect(again.password).to.not.be.equal(found.password);
+            expect(again.password).to.not.be.equal('no');
+            done();
+          });
+        });
+      });
     });
   });
 });

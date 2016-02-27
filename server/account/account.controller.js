@@ -33,8 +33,10 @@ export function getAccount(req, res) {
 
 export function updateAccount(req, res) {
   const updateUser = {
-    name: req.body.name,
-    email: req.body.email,
+    $set: {
+      name: req.body.name,
+      email: req.body.email,
+    },
   };
 
   Account.findOneAndUpdate(req.user.id, updateUser, { new: true }, (err, updated) => {
@@ -123,7 +125,7 @@ export function generateToken(req, res) {
           return res.boom.wrap(updateErr);
         }
 
-        // send email
+        // send email with token
 
         return res.send('');
       });
@@ -133,26 +135,33 @@ export function generateToken(req, res) {
 
 export function reset(req, res) {
   const find = {
-    resetPasswordToken: req.params.token,
+    resetPasswordToken: req.body.token,
     resetPasswordExpires: { $gt: new Date() },
   };
 
-  const newPassword = {
-    password: req.body.password,
-  };
-
-  Account.findOneAndUpdate(find, newPassword, (updateErr, isFound) => {
-    if (updateErr) {
-      return res.boom.wrap(updateErr);
+  Account.findOne(find, (foundErr, account) => {
+    if (foundErr) {
+      return res.boom.wrap(foundErr);
     }
 
-    if (!isFound) {
+    if (!account) {
       return res.boom.notFound();
     }
 
-    // send email
+    /* eslint-disable */
+    account.password = req.body.password;
+    account.resetPasswordExpires = null;
+    account.resetPasswordToken = null;
+    /* eslint-enable*/
 
-    return res.send('');
+    account.save((err) => {
+      if (err) {
+        return res.boom.wrap(err);
+      }
+
+      // send email
+      return res.send('');
+    });
   });
 }
 

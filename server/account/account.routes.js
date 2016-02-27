@@ -10,7 +10,7 @@ router.post('/account/logout', AccountController.isAuthenticated, AccountControl
 router.post('/account/register', AccountController.isNotAuthenticated, AccountController.register);
 router.post('/account/login', AccountController.isNotAuthenticated, AccountController.login);
 
-router.post('/account/reset', AccountController.generateToken);
-router.post('/account/reset/:token', AccountController.reset);
+router.post('/account/token', AccountController.generateToken);
+router.post('/account/reset', AccountController.reset);
 
 export default router;

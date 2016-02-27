@@ -33,8 +33,10 @@ export function updateAccount(req, res) {
     }
 
     const updateUser = {
-      name: req.body.hasOwnProperty('name') ? req.body.name : user.name,
-      email: req.body.hasOwnProperty('email') ? req.body.email : user.email,
+      $set: {
+        name: req.body.hasOwnProperty('name') ? req.body.name : user.name,
+        email: req.body.hasOwnProperty('email') ? req.body.email : user.email,
+      },
     };
 
     Account.findOneAndUpdate(req.params.id, updateUser, { new: true }, (updateErr, updated) => {

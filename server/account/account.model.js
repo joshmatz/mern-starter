@@ -55,8 +55,6 @@ accountSchema.pre('save', hashPassword);
 
 accountSchema.methods.isValidPassword = isValidPassword;
 
-// accountSchema.statics.authenticate = ;
-
 accountSchema.plugin(mongoosePaginate);
 
 export default mongoose.model('Account', accountSchema);
