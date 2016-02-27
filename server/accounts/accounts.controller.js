@@ -8,32 +8,51 @@ export function getAccounts(req, res) {
   const leanWithId = true;
 
   Account.paginate({}, { limit, page, sort, lean, leanWithId }, (err, result) => {
+    if (err) {
+      return res.boom.wrap(err);
+    }
+
     res.send(result);
   });
 }
 
 export function getAccount(req, res) {
-  res.send(req.user);
+  Account.findById(req.params.id, (err, user) => {
+    if (err) {
+      return res.boom.wrap(err);
+    }
+
+    res.send(user);
+  });
 }
 
 export function updateAccount(req, res) {
-  const updateUser = {
-    name: req.body.name,
-    email: req.body.email,
-  };
+  Account.findById(req.params.id, (err, user) => {
+    if (err) {
+      return res.boom.wrap(err);
+    }
 
-  Account.findOneAndUpdate(req.user.id, updateUser, { new: true }, (err, updated) => {
-    res.send(updated);
+    const updateUser = {
+      name: req.body.hasOwnProperty('name') ? req.body.name : user.name,
+      email: req.body.hasOwnProperty('email') ? req.body.email : user.email,
+    };
+
+    Account.findOneAndUpdate(req.params.id, updateUser, { new: true }, (updateErr, updated) => {
+      if (updateErr) {
+        return res.boom.wrap(updateErr);
+      }
+
+      res.send(updated);
+    });
   });
 }
 
 export function deleteAccount(req, res) {
-  const updateUser = {
-    name: req.body.name,
-    email: req.body.email,
-  };
+  Account.remove({ _id: req.params.id }, (err) => {
+    if (err) {
+      return res.boom.wrap(err);
+    }
 
-  Account.findOneAndUpdate(req.user.id, updateUser, { new: true }, (err, updated) => {
-    res.send(updated);
+    res.send('');
   });
 }

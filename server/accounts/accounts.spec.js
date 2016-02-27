@@ -198,7 +198,7 @@ describe('==== User CRUD Tests ====', () => {
 
       it('can update an account', (done) => {
         request(app)
-        .post('/api/accounts/1')
+        .post(`/api/accounts/${existingAccount.id}`)
         .send({name: 'George'})
         .set('Cookie', Cookie)
         .end((err, res) => {
@@ -208,13 +208,13 @@ describe('==== User CRUD Tests ====', () => {
         });
       });
 
-      xit('can delete an account', (done) => {
+      it('can delete an account', (done) => {
         request(app)
-        .delete('/api/accounts/1')
+        .delete(`/api/accounts/${existingAccount.id}`)
         .set('Cookie', Cookie)
         .end((err, res) => {
-          expect(res.status).to.be.equal(401);
-          expect(res.body.statusCode).to.be.equal(401);
+          expect(res.status).to.be.equal(200);
+          expect(res.body).to.not.be.ok;
           done();
         });
       });
